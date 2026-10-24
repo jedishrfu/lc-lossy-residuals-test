@@ -171,7 +171,7 @@ def sweep_csv_rows(
     input_file: Path,
     original_size: int,
     result: dict[str, object],
-    lossless_baselines: dict[str, dict[str, object]],
+    lossless_baselines: dict[str, dict[str, object]] | None = None,
 ) -> list[dict[str, object]]:
     rows = base.original_sweep_csv_rows(
         input_file, original_size, result, lossless_baselines

@@ -72,14 +72,18 @@ XOR residual instead of a floating-point subtraction.
 Run the lossless comparisons for each f32 input, appending to the same CSV:
 
 ```sh
-python3 lc_lossless_compress.py input-f32.raw --lc-dir /path/to/LC-framework
+python3 lc_lossless_compress.py HACC --lc-dir /path/to/LC-framework
 ```
 
 The default codecs are LC, SZ3, ZFP, PFPL, Bzip2, Zstandard, SLEEK, SPspeed,
 SPratio, and resident ZIP/Deflate via zip/unzip. Select a subset with
 `--tools lc bzip2 zstandard sleek spspeed spratio zip`. CPU SLEEK and FPcompress
-commands default to the executables in `~/bin`; each executable has an override
-flag shown by `--help`. SPspeed is FPcompress's speed-oriented codec. ZIP uses
+commands are looked up in `PATH`; each executable has an override
+flag shown by `--help`. Bzip2 prefers `pbzip2`, then `lbzip2`, then `bzip2`.
+PFPL prefers its `_par` commands over `_ser`; Zstandard uses `-T0`.
+LC prefers `lc_omp` over `lc`; `--lc` selects an explicit command.
+`--lc-dir` specifies the LC source checkout needed for standalone generation
+and headers; when omitted, it defaults to the resolved installed LC location. SPspeed is FPcompress's speed-oriented codec. ZIP uses
 the resident zip/unzip, not the PKWARE PKZIP product.
 
 Measurements append to `testrpts/lossless_results.csv` beside the script across
@@ -116,7 +120,7 @@ skipping a requested codec.
 Run only the LC lossy-data + lossless XOR-residual epsilon sweep:
 
 ```sh
-python3 lc_two_part_compress.py input-f32.raw --lc-dir /path/to/LC-framework
+python3 lc_two_part_compress.py HACC --lc-dir /path/to/LC-framework
 ```
 
 The sweep runner preserves the ten logarithmic bounds from 0.01 through 10,
@@ -140,22 +144,30 @@ throughput cells are blank because this runner does not measure the complete
 two-part codec time. Its detailed sweep CSV remains unchanged. The separate
 lossy-residual experiment does not append to the lossless comparison CSV.
 
-## Run all 18 benchmark inputs
+## Run matching SDR benchmark inputs
 
-`./runtests` runs `lc_lossless_compress.py` followed by
-`lc_two_part_compress.py` for each of the 18 f32 files, sequentially.
-Both append to the same shared CSV. Detailed sweep outputs are saved under
-this project's `testrpts` folder. The batch stops on the first failed command.
+All Python benchmark runners accept a literal, case-sensitive substring of a
+relative dataset path. They recursively search `/home/LC/SDRbench_input` and
+process every matching `.f32` or `.f32.dat` file, including matches in parent
+directory names. Inputs must be nonempty with sizes divisible by four.
+Use `--input-root` to select a different root (for example, if your installation
+names the directory `SDRbench_inputs`). No-match patterns fail before benchmarks
+start. Overlapping patterns in `runtests` are deduplicated.
 
-Use `./runtests --dry-run` to preview all 36 commands, `--csv` to change
-the shared CSV, or `--lc-dir` to choose another LC checkout. Optional positional
-file paths run a selected subset instead of the full list. This batch runs the
-lossy-data/lossless-residual experiment; the separate LDLR runner is available
-independently.
+```sh
+./runtests HACC
+./runtests HACC NYX --dry-run
+python3 lc_lossless_compress.py HACC --tools bzip2 zstandard
+./runtests_LDLLR HACC --lc-dir /home/LC/LC-framework
+./runtests_LDLR HACC --lc-dir /home/LC/LC-framework
+```
 
-The three `FPDouble_Datasets/*.sp.f32` originals are SPDP-compressed, as
-documented by https://userweb.cs.txstate.edu/~burtscher/research/datasets/FPsingle/.
-The batch uses their decompressed `.raw.f32` counterparts. The originals are
-preserved. Decompressed sizes were checked against the SPDP block headers,
-and all three raw outputs passed SPDP recompression/decompression round trips.
-runtests checks input sizes before launching benchmarks.
+`./runtests` without patterns processes all eligible files. It runs the lossless
+phase followed by the lossy-data/lossless-residual phase, sequentially, stopping
+on the first failed command. Both append to the same CSV; `--csv` changes that
+file. Use `--dry-run` to preview commands. `--lc-dir` selects the source checkout
+without changing PATH command lookup.
+
+Sweep report directories include a digest of the full input path so files with
+the same basename stay separate. With multiple matches, an explicit
+`--output-dir` contains a separate subdirectory for each input.

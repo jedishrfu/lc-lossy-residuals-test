@@ -28,6 +28,7 @@ import shutil
 import struct
 import subprocess
 import sys
+from benchmark_common import discover_inputs, executable, lc_source_dir, dataset_label, INPUT_ROOT
 
 
 DEFAULT_PATTERN = ".+ .+ R.+|C.+|H.+"
@@ -404,13 +405,13 @@ def validate_arguments(args: argparse.Namespace) -> tuple[Path, Path, Path]:
     if args.epsilon_points < 2:
         raise ValueError("--epsilon-points must be at least 2")
     input_file = Path(args.input).expanduser().resolve()
-    lc_dir = Path(args.lc_dir).expanduser().resolve()
+    lc_dir = lc_source_dir(args.lc_dir, args.lc)
     if args.output_dir:
         output_dir = Path(args.output_dir).expanduser().resolve()
     else:
         timestamp = datetime.now().strftime("%Y%m%d-%H%M")
         output_dir = (
-            Path("testrpts") / f"{input_file.name}_{RUN_TYPE}_{timestamp}"
+            Path("testrpts") / f"{dataset_label(input_file)}_{RUN_TYPE}_{timestamp}"
         ).resolve()
 
     if not input_file.is_file():
@@ -419,8 +420,6 @@ def validate_arguments(args: argparse.Namespace) -> tuple[Path, Path, Path]:
         raise ValueError("The input file is empty")
     if not lc_dir.is_dir():
         raise ValueError(f"LC directory does not exist: {lc_dir}")
-    if not (lc_dir / "lc").is_file():
-        raise ValueError(f"The built LC executable was not found at {lc_dir / 'lc'}")
     if not (lc_dir / "generate_standalone_CPU_compressor_decompressor.py").is_file():
         raise ValueError("The LC CPU standalone generator was not found")
 
@@ -448,13 +447,15 @@ def build_parser() -> argparse.ArgumentParser:
             "lossy LC stream plus a losslessly compressed XOR-residual stream."
         )
     )
-    parser.add_argument("input", help="Raw binary floating-point test data")
+    parser.add_argument("input", help="Substring of an SDR dataset path (.f32 or .f32.dat)")
+    parser.add_argument("--input-root", default=INPUT_ROOT)
+    parser.add_argument("--lc", default=None, help="LC command override (default: lc_omp, then lc)")
     parser.add_argument("--epsilon-points", type=int, default=ERROR_BOUND_COUNT,
                         help="Number of logarithmic epsilon sweep points (default: %(default)s)")
     parser.add_argument(
         "--lc-dir",
-        default=".",
-        help="LC-framework directory containing the built ./lc command (default: .)",
+        default=None,
+        help="LC source directory; defaults to installed LC location",
     )
     parser.add_argument(
         "--output-dir",
@@ -714,8 +715,21 @@ def append_combined_lossless_row(
 
 def main() -> int:
     args = build_parser().parse_args()
+    args.lc = executable(args.lc) if args.lc else executable("lc", ("lc_omp",))
+    import copy
+    inputs = discover_inputs([args.input], args.input_root)
+    for inp in inputs:
+        current = copy.copy(args)
+        current.input = str(inp)
+        if args.output_dir and len(inputs) > 1:
+            current.output_dir = str(Path(args.output_dir) / dataset_label(inp))
+        run_input(current)
+    return 0
+
+
+def run_input(args) -> int:
     input_file, lc_dir, output_dir = validate_arguments(args)
-    lc_executable = (lc_dir / "lc").resolve()
+    lc_executable = args.lc
     perf_argument = ["y"] if args.performance else []
     original_size = input_file.stat().st_size
     error_bounds = logarithmic_values(ERROR_BOUND_MIN, ERROR_BOUND_MAX, args.epsilon_points)

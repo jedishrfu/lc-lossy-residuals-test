@@ -14,6 +14,7 @@ import sys
 import tempfile
 import time
 import lc_two_part_compress as lc
+from benchmark_common import discover_inputs, executable, lc_source_dir, INPUT_ROOT
 
 FIELDS = ["file", "command", "command_args", "original_bytes", "compressed_bytes",
           "compression_ratio", "exact_reconstruction", "compression_time_seconds",
@@ -24,11 +25,13 @@ TOOLS = ["lc", "sz3", "zfp", "pfpl", "bzip2", "zstandard", "sleek", "spspeed", "
 
 def build_parser():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("input", help="Nonempty raw binary f32 file")
+    p.add_argument("input", help="Substring of an SDR dataset path (.f32 or .f32.dat)")
     p.add_argument("--csv", default=str(Path(__file__).resolve().parent / "testrpts/lossless_results.csv"),
                    help="Common CSV; append one row per codec/settings combination")
     p.add_argument("--tools", nargs="+", choices=TOOLS, default=TOOLS)
-    p.add_argument("--lc-dir", default=".")
+    p.add_argument("--input-root", default=INPUT_ROOT)
+    p.add_argument("--lc", default=None, help="LC command override (default: lc_omp, then lc)")
+    p.add_argument("--lc-dir", default=None, help="LC source directory; defaults to installed LC location")
     p.add_argument("--lossless-pattern", default=lc.DEFAULT_PATTERN)
     p.add_argument("--compiler", default=os.environ.get("CXX", "g++-16"))
     p.add_argument("--bzip2-levels", nargs="+", type=int, default=[1, 5, 9])
@@ -38,22 +41,15 @@ def build_parser():
         "sz3": "sz3", "zfp": "zfp", "pfpl-compressor": "pfpl_f32_abs_compress_ser",
         "pfpl-decompressor": "pfpl_f32_abs_decompress_ser", "bzip2": "bzip2",
         "zstd": "zstd", "zip": "zip", "unzip": "unzip",
-        "sleek-compressor": str(Path.home()/"bin/sleek_single_compressor_lossless_cpu"),
-        "sleek-decompressor": str(Path.home()/"bin/sleek_single_decompressor_lossless_cpu"),
-        "spspeed-compressor": str(Path.home()/"bin/speed-cpu-compress-single.exe"),
-        "spspeed-decompressor": str(Path.home()/"bin/speed-cpu-decompress-single.exe"),
-        "spratio-compressor": str(Path.home()/"bin/ratio-cpu-compress-single.exe"),
-        "spratio-decompressor": str(Path.home()/"bin/ratio-cpu-decompress-single.exe"),
+        "sleek-compressor": "sleek_single_compressor_lossless_cpu",
+        "sleek-decompressor": "sleek_single_decompressor_lossless_cpu",
+        "spspeed-compressor": "speed-cpu-compress-single.exe",
+        "spspeed-decompressor": "speed-cpu-decompress-single.exe",
+        "spratio-compressor": "ratio-cpu-compress-single.exe",
+        "spratio-decompressor": "ratio-cpu-decompress-single.exe",
     }.items():
         p.add_argument("--"+flag, default=default)
     return p
-
-
-def executable(value):
-    path = shutil.which(str(Path(value).expanduser()))
-    if path is None:
-        raise ValueError(f"Executable not found: {value}")
-    return str(Path(path).resolve())
 
 
 def validate(args):
@@ -71,10 +67,17 @@ def validate(args):
         required[tool] = [tool+"_compressor",tool+"_decompressor"]
     for tool in args.tools:
         for attribute in required.get(tool,[]):
-            setattr(args,attribute,executable(getattr(args,attribute)))
-    args.lc_dir = Path(args.lc_dir).expanduser().resolve()
+            value = getattr(args,attribute)
+            alternatives = ()
+            defaults = {"bzip2": ("pbzip2", "lbzip2"),
+                        "pfpl_f32_abs_compress_ser": ("pfpl_f32_abs_compress_par",),
+                        "pfpl_f32_abs_decompress_ser": ("pfpl_f32_abs_decompress_par",)}
+            alternatives = defaults.get(value, ())
+            setattr(args,attribute,executable(value, alternatives))
     if "lc" in args.tools:
-        executable(str(args.lc_dir/"lc"))
+        args.lc = executable(args.lc) if args.lc else executable("lc", ("lc_omp",))
+        args.lc_dir = lc_source_dir(args.lc_dir, args.lc)
+    if "lc" in args.tools:
         executable(args.compiler)
         if not (args.lc_dir/"generate_standalone_CPU_compressor_decompressor.py").is_file():
             raise ValueError("LC CPU standalone generator not found")
@@ -132,7 +135,7 @@ def commands(args, tool, inp, compressed, decoded, level=None):
         return ([args.bzip2,f"-{level}","-c",str(inp)],
                 [args.bzip2,"-d","-c",str(compressed)],compressed,decoded,cwd)
     if tool == "zstandard":
-        return ([args.zstd,"--ultra",f"-{level}","-q","-f",str(inp),"-o",str(compressed)],
+        return ([args.zstd,"-T0","--ultra",f"-{level}","-q","-f",str(inp),"-o",str(compressed)],
                 [args.zstd,"-d","-q","-f",str(compressed),"-o",str(decoded)],None,None,cwd)
     if tool == "zip":
         return ([args.zip,"-q",f"-{level}","-j",str(compressed),"--",str(inp)],
@@ -159,6 +162,15 @@ def measure(inp, compressed, decoded, encode, decode, cwd, encode_stdout=None, d
 
 def main():
     args = build_parser().parse_args()
+    import copy
+    for inp in discover_inputs([args.input], args.input_root):
+        current = copy.copy(args)
+        current.input = str(inp)
+        run_input(current)
+    return 0
+
+
+def run_input(args):
     inp = validate(args)
     csv_path = Path(args.csv).expanduser().resolve()
     # Check the header before executing expensive searches or compressors.
@@ -178,7 +190,7 @@ def main():
                 decoded = run_dir/"decoded.raw"
                 if tool == "lc":
                     lc.initialize_command_log(run_dir/"build.log",inp)
-                    pipeline = lc.search_best_pipeline(args.lc_dir/"lc",inp,"",args.lossless_pattern,cwd=run_dir)
+                    pipeline = lc.search_best_pipeline(args.lc,inp,"",args.lossless_pattern,cwd=run_dir)
                     generated = lc.generate_sources(args.lc_dir,"",pipeline)
                     encoder,decoder = lc.preserve_and_build_pair("lossless",*generated,run_dir,args.compiler,args.lc_dir)
                     encode,decode = [str(encoder),str(inp),str(compressed)],[str(decoder),str(compressed),str(decoded)]
