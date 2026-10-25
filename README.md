@@ -147,11 +147,10 @@ lossy-residual experiment does not append to the lossless comparison CSV.
 ## Run matching SDR benchmark inputs
 
 All Python benchmark runners accept a literal, case-sensitive substring of a
-relative dataset path. They recursively search `/home/LC/SDRbench_input` and
+relative dataset path. They recursively search `/home/LC/SDRbench_inputs` and
 process every matching `.f32` or `.f32.dat` file, including matches in parent
 directory names. Inputs must be nonempty with sizes divisible by four.
-Use `--input-root` to select a different root (for example, if your installation
-names the directory `SDRbench_inputs`). No-match patterns fail before benchmarks
+Use `--input-root` to select a different root. No-match patterns fail before benchmarks
 start. Overlapping patterns in `runtests` are deduplicated.
 
 ```sh
