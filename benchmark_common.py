@@ -3,7 +3,7 @@ from pathlib import Path
 import hashlib
 import shutil
 
-INPUT_ROOT = "/home/LC/SDRbench_inputs"
+INPUT_ROOT = "/home/LC/SDRbench_inputs/"
 # This project lives at workspace/projects/lc-lossy-residuals-test.
 REPORT_ROOT = Path(__file__).resolve().parents[2] / "testrpts"
 
