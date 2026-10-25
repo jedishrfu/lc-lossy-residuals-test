@@ -3,7 +3,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-from benchmark_common import discover_inputs, executable, dataset_label, REPORT_ROOT
+from benchmark_common import discover_inputs, executable, dataset_label, REPORT_ROOT, lc_source_dir
 import lc_lossless_compress as runner
 
 
@@ -91,3 +91,25 @@ class DiscoveryTests(unittest.TestCase):
         with patch.dict('os.environ', {}, clear=True):
             self.assertEqual(runner.build_parser().parse_args(['HACC']).compiler, 'g++')
             self.assertEqual(sweep.build_parser().parse_args(['HACC']).compiler, 'g++')
+
+    def test_lc_sources_found_in_workspace_checkout(self):
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory).resolve()
+            binary = workspace / 'bin' / 'lc'
+            binary.parent.mkdir()
+            binary.touch()
+            sources = workspace / 'github' / 'LC-framework'
+            sources.mkdir(parents=True)
+            generator = sources / 'generate_standalone_CPU_compressor_decompressor.py'
+            generator.touch()
+            with patch('benchmark_common.shutil.which', return_value=str(binary)):
+                self.assertEqual(lc_source_dir(None, 'lc'), sources)
+                self.assertEqual(lc_source_dir(str(workspace / 'custom'), 'lc'), workspace / 'custom')
+                (binary.parent / generator.name).touch()
+                self.assertEqual(lc_source_dir(None, 'lc'), binary.parent)
+
+    def test_missing_lc_sources_give_actionable_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch('benchmark_common.shutil.which', return_value=str(Path(directory)/'bin/lc')), patch('benchmark_common.__file__', str(Path(directory)/'projects/benchmark/benchmark_common.py')):
+                with self.assertRaisesRegex(ValueError, '--lc-dir'):
+                    lc_source_dir(None, 'lc')

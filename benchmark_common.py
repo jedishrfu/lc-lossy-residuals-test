@@ -41,4 +41,21 @@ def executable(command, alternatives=()):
 
 
 def lc_source_dir(value, command):
-    return Path(value).expanduser().resolve() if value else Path(shutil.which(command)).resolve().parent
+    if value:
+        return Path(value).expanduser().resolve()
+    installed = shutil.which(command)
+    if installed is None:
+        raise ValueError(f"Executable not found in PATH: {command}")
+    executable_dir = Path(installed).resolve().parent
+    candidates = [
+        executable_dir,
+        executable_dir.parent / "github" / "LC-framework",
+        Path(__file__).resolve().parents[2] / "github" / "LC-framework",
+    ]
+    for candidate in candidates:
+        if (candidate / "generate_standalone_CPU_compressor_decompressor.py").is_file():
+            return candidate
+    raise ValueError(
+        "LC CPU standalone generator not found. Pass --lc-dir with the LC-framework "
+        "source checkout. Searched: " + ", ".join(str(path) for path in candidates)
+    )

@@ -31,7 +31,7 @@ def build_parser():
     p.add_argument("--tools", nargs="+", choices=TOOLS, default=TOOLS)
     p.add_argument("--input-root", default=INPUT_ROOT)
     p.add_argument("--lc", default=None, help="LC command override (default: lc)")
-    p.add_argument("--lc-dir", default=None, help="LC source directory; defaults to installed LC location")
+    p.add_argument("--lc-dir", default=None, help="LC source checkout; auto-detects workspace/github/LC-framework")
     p.add_argument("--lossless-pattern", default=lc.DEFAULT_PATTERN)
     p.add_argument("--compiler", default=os.environ.get("CXX", "g++"))
     p.add_argument("--bzip2-levels", nargs="+", type=int, default=[1, 5, 9])

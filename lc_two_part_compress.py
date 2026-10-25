@@ -455,7 +455,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--lc-dir",
         default=None,
-        help="LC source directory; defaults to installed LC location",
+        help="LC source checkout; auto-detects workspace/github/LC-framework",
     )
     parser.add_argument(
         "--output-dir",

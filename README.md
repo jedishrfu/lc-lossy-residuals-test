@@ -84,7 +84,8 @@ PFPL prefers `pfpl-f32-abs_compress_omp` and
 `pfpl-f32-abs_decompress_omp` over their `_ser` counterparts; Zstandard uses `-T0`.
 LC uses the installed `lc` command (built with OpenMP); `--lc` selects an explicit command.
 `--lc-dir` specifies the LC source checkout needed for standalone generation
-and headers; when omitted, it defaults to the resolved installed LC location. SPspeed is FPcompress's speed-oriented codec. ZIP uses
+and headers; when omitted, the runners check beside the resolved executable,
+then `github/LC-framework` in its workspace, then this project’s workspace. SPspeed is FPcompress's speed-oriented codec. ZIP uses
 the resident zip/unzip, not the PKWARE PKZIP product.
 
 Measurements append to `workspace/testrpts/lossless_results.csv` under the workspace root across
@@ -166,7 +167,8 @@ python3 lc_lossless_compress.py HACC --tools bzip2 zstandard
 phase followed by the lossy-data/lossless-residual phase, sequentially, stopping
 on the first failed command. Both append to the same CSV; `--csv` changes that
 file. Use `--dry-run` to preview commands. `--lc-dir` selects the source checkout
-without changing PATH command lookup.
+without changing PATH command lookup. A standard workspace installation is
+detected automatically, so `./runtests HACC` requires no `--lc-dir` argument.
 
 Sweep report directories include a digest of the full input path so files with
 the same basename stay separate. With multiple matches, an explicit
