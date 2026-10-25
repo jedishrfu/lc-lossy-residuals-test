@@ -80,8 +80,9 @@ SPratio, and resident ZIP/Deflate via zip/unzip. Select a subset with
 `--tools lc bzip2 zstandard sleek spspeed spratio zip`. CPU SLEEK and FPcompress
 commands are looked up in `PATH`; each executable has an override
 flag shown by `--help`. Bzip2 prefers `pbzip2`, then `lbzip2`, then `bzip2`.
-PFPL prefers its `_par` commands over `_ser`; Zstandard uses `-T0`.
-LC prefers `lc_omp` over `lc`; `--lc` selects an explicit command.
+PFPL prefers `pfpl-f32-abs_compress_omp` and
+`pfpl-f32-abs_decompress_omp` over their `_ser` counterparts; Zstandard uses `-T0`.
+LC uses the installed `lc` command (built with OpenMP); `--lc` selects an explicit command.
 `--lc-dir` specifies the LC source checkout needed for standalone generation
 and headers; when omitted, it defaults to the resolved installed LC location. SPspeed is FPcompress's speed-oriented codec. ZIP uses
 the resident zip/unzip, not the PKWARE PKZIP product.
@@ -175,3 +176,7 @@ Default report paths are resolved from the script location, independently of the
 current working directory. CSVs, sweep reports, command logs, generated codecs,
 and retained compressed/reconstructed data all go under `workspace/testrpts`.
 Explicit `--csv`, `--lossless-csv`, and `--output-dir` overrides remain supported.
+
+FPcompress defaults use the installed names `fpcompress-single-speed-cpu-compress`
+and `fpcompress-single-ratio-cpu-compress`, with their matching `decompress`
+commands. SLEEK defaults use the single-precision lossless CPU commands.

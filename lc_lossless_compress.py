@@ -30,23 +30,23 @@ def build_parser():
                    help="Common CSV; append one row per codec/settings combination")
     p.add_argument("--tools", nargs="+", choices=TOOLS, default=TOOLS)
     p.add_argument("--input-root", default=INPUT_ROOT)
-    p.add_argument("--lc", default=None, help="LC command override (default: lc_omp, then lc)")
+    p.add_argument("--lc", default=None, help="LC command override (default: lc)")
     p.add_argument("--lc-dir", default=None, help="LC source directory; defaults to installed LC location")
     p.add_argument("--lossless-pattern", default=lc.DEFAULT_PATTERN)
-    p.add_argument("--compiler", default=os.environ.get("CXX", "g++-16"))
+    p.add_argument("--compiler", default=os.environ.get("CXX", "g++"))
     p.add_argument("--bzip2-levels", nargs="+", type=int, default=[1, 5, 9])
     p.add_argument("--zstd-levels", nargs="+", type=int, default=[1, 3, 9, 19, 22])
     p.add_argument("--zip-levels", nargs="+", type=int, default=[1, 6, 9])
     for flag, default in {
-        "sz3": "sz3", "zfp": "zfp", "pfpl-compressor": "pfpl_f32_abs_compress_ser",
-        "pfpl-decompressor": "pfpl_f32_abs_decompress_ser", "bzip2": "bzip2",
+        "sz3": "sz3", "zfp": "zfp", "pfpl-compressor": "pfpl-f32-abs_compress_ser",
+        "pfpl-decompressor": "pfpl-f32-abs_decompress_ser", "bzip2": "bzip2",
         "zstd": "zstd", "zip": "zip", "unzip": "unzip",
         "sleek-compressor": "sleek_single_compressor_lossless_cpu",
         "sleek-decompressor": "sleek_single_decompressor_lossless_cpu",
-        "spspeed-compressor": "speed-cpu-compress-single.exe",
-        "spspeed-decompressor": "speed-cpu-decompress-single.exe",
-        "spratio-compressor": "ratio-cpu-compress-single.exe",
-        "spratio-decompressor": "ratio-cpu-decompress-single.exe",
+        "spspeed-compressor": "fpcompress-single-speed-cpu-compress",
+        "spspeed-decompressor": "fpcompress-single-speed-cpu-decompress",
+        "spratio-compressor": "fpcompress-single-ratio-cpu-compress",
+        "spratio-decompressor": "fpcompress-single-ratio-cpu-decompress",
     }.items():
         p.add_argument("--"+flag, default=default)
     return p
@@ -70,12 +70,12 @@ def validate(args):
             value = getattr(args,attribute)
             alternatives = ()
             defaults = {"bzip2": ("pbzip2", "lbzip2"),
-                        "pfpl_f32_abs_compress_ser": ("pfpl_f32_abs_compress_par",),
-                        "pfpl_f32_abs_decompress_ser": ("pfpl_f32_abs_decompress_par",)}
+                        "pfpl-f32-abs_compress_ser": ("pfpl-f32-abs_compress_omp",),
+                        "pfpl-f32-abs_decompress_ser": ("pfpl-f32-abs_decompress_omp",)}
             alternatives = defaults.get(value, ())
             setattr(args,attribute,executable(value, alternatives))
     if "lc" in args.tools:
-        args.lc = executable(args.lc) if args.lc else executable("lc", ("lc_omp",))
+        args.lc = executable(args.lc) if args.lc else executable("lc")
         args.lc_dir = lc_source_dir(args.lc_dir, args.lc)
     if "lc" in args.tools:
         executable(args.compiler)

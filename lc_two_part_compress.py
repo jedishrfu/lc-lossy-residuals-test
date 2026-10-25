@@ -449,7 +449,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("input", help="Substring of an SDR dataset path (.f32 or .f32.dat)")
     parser.add_argument("--input-root", default=INPUT_ROOT)
-    parser.add_argument("--lc", default=None, help="LC command override (default: lc_omp, then lc)")
+    parser.add_argument("--lc", default=None, help="LC command override (default: lc)")
     parser.add_argument("--epsilon-points", type=int, default=ERROR_BOUND_COUNT,
                         help="Number of logarithmic epsilon sweep points (default: %(default)s)")
     parser.add_argument(
@@ -485,7 +485,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--compiler",
-        default=os.environ.get("CXX", "g++-16"),
+        default=os.environ.get("CXX", "g++"),
         help="C++ compiler (default: CXX environment variable or g++)",
     )
     parser.add_argument(
@@ -715,7 +715,7 @@ def append_combined_lossless_row(
 
 def main() -> int:
     args = build_parser().parse_args()
-    args.lc = executable(args.lc) if args.lc else executable("lc", ("lc_omp",))
+    args.lc = executable(args.lc) if args.lc else executable("lc")
     import copy
     inputs = discover_inputs([args.input], args.input_root)
     for inp in inputs:
