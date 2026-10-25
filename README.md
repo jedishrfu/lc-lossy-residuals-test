@@ -86,7 +86,7 @@ LC prefers `lc_omp` over `lc`; `--lc` selects an explicit command.
 and headers; when omitted, it defaults to the resolved installed LC location. SPspeed is FPcompress's speed-oriented codec. ZIP uses
 the resident zip/unzip, not the PKWARE PKZIP product.
 
-Measurements append to `testrpts/lossless_results.csv` beside the script across
+Measurements append to `workspace/testrpts/lossless_results.csv` under the workspace root across
 all invocations; override with `--csv /path/to/common.csv`. Existing rows are
 preserved, and a file lock protects concurrent appends. A mismatched existing
 header is rejected. Each row has exactly these columns in order:
@@ -126,7 +126,7 @@ python3 lc_two_part_compress.py HACC --lc-dir /path/to/LC-framework
 The sweep runner preserves the ten logarithmic bounds from 0.01 through 10,
 quality statistics, generated codecs, and exact XOR reconstruction checks. It
 writes one CSV row per epsilon plus JSON reports and a command log under
-`testrpts/INPUT_LDLLR_TIMESTAMP/`. It requires only LC and a C++ compiler,
+`workspace/testrpts/INPUT_LDLLR_TIMESTAMP/`. It requires only LC and a C++ compiler,
 and supports f32 or f64 preprocessors. Both runners accept `--compiler` and `--lossless-pattern`; the sweep also accepts
 `--output-dir`, `--performance`,
 `--lossy-preprocessor` and `--lossy-pattern`.
@@ -136,7 +136,7 @@ helpers from the sweep runner. Run them sequentially when sharing an LC
 checkout, since its generator writes fixed standalone source filenames.
 
 The lossy-data + lossless-residual runner also appends one combined result per
-epsilon to the same `testrpts/lossless_results.csv`. Override that destination
+epsilon to the same `workspace/testrpts/lossless_results.csv`. Override that destination
 with `--lossless-csv`. These rows record total bytes from both streams, the
 final compression factor, and verified exact reconstruction. Epsilon,
 preprocessor, and both pipelines are recorded in `command_args`. Timing and
@@ -171,3 +171,8 @@ without changing PATH command lookup.
 Sweep report directories include a digest of the full input path so files with
 the same basename stay separate. With multiple matches, an explicit
 `--output-dir` contains a separate subdirectory for each input.
+
+Default report paths are resolved from the script location, independently of the
+current working directory. CSVs, sweep reports, command logs, generated codecs,
+and retained compressed/reconstructed data all go under `workspace/testrpts`.
+Explicit `--csv`, `--lossless-csv`, and `--output-dir` overrides remain supported.

@@ -4,6 +4,8 @@ import hashlib
 import shutil
 
 INPUT_ROOT = "/home/LC/SDRbench_input"
+# This project lives at workspace/projects/lc-lossy-residuals-test.
+REPORT_ROOT = Path(__file__).resolve().parents[2] / "testrpts"
 
 
 def discover_inputs(patterns, root=INPUT_ROOT):

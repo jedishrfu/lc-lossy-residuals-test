@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 PROJECT = Path(__file__).resolve().parent
-from benchmark_common import discover_inputs, INPUT_ROOT
+from benchmark_common import REPORT_ROOT, discover_inputs, INPUT_ROOT
 
 
 def main():
@@ -15,7 +15,7 @@ def main():
     parser.add_argument("inputs", nargs="*", help="Dataset path substrings; omitted means all inputs")
     parser.add_argument("--dry-run", action="store_true", help="Print commands without running benchmarks")
     parser.add_argument("--lc-dir", default=None)
-    parser.add_argument("--csv", default=str(PROJECT / "testrpts/lossless_results.csv"))
+    parser.add_argument("--csv", default=str(REPORT_ROOT / "lossless_results.csv"))
     parser.add_argument("--input-root", default=INPUT_ROOT)
     args = parser.parse_args()
     try:

@@ -28,7 +28,7 @@ import shutil
 import struct
 import subprocess
 import sys
-from benchmark_common import discover_inputs, executable, lc_source_dir, dataset_label, INPUT_ROOT
+from benchmark_common import REPORT_ROOT, discover_inputs, executable, lc_source_dir, dataset_label, INPUT_ROOT
 
 
 DEFAULT_PATTERN = ".+ .+ R.+|C.+|H.+"
@@ -411,7 +411,7 @@ def validate_arguments(args: argparse.Namespace) -> tuple[Path, Path, Path]:
     else:
         timestamp = datetime.now().strftime("%Y%m%d-%H%M")
         output_dir = (
-            Path("testrpts") / f"{dataset_label(input_file)}_{RUN_TYPE}_{timestamp}"
+            REPORT_ROOT / f"{dataset_label(input_file)}_{RUN_TYPE}_{timestamp}"
         ).resolve()
 
     if not input_file.is_file():
@@ -462,7 +462,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help=(
             "Directory for generated programs and data "
-            f"(default: testrpts/INPUT_FILE_NAME_{RUN_TYPE}_YYYYMMDD-HHMM)"
+            f"(default: {REPORT_ROOT}/INPUT_FILE_NAME_{RUN_TYPE}_YYYYMMDD-HHMM)"
         ),
     )
     parser.add_argument(
@@ -495,7 +495,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--lossless-csv",
-        default=str(Path(__file__).resolve().parent / "testrpts/lossless_results.csv"),
+        default=str(REPORT_ROOT / "lossless_results.csv"),
         help="Common lossless CSV to append combined two-part results to",
     )
     return parser

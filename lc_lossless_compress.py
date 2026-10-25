@@ -14,7 +14,7 @@ import sys
 import tempfile
 import time
 import lc_two_part_compress as lc
-from benchmark_common import discover_inputs, executable, lc_source_dir, INPUT_ROOT
+from benchmark_common import REPORT_ROOT, discover_inputs, executable, lc_source_dir, INPUT_ROOT
 
 FIELDS = ["file", "command", "command_args", "original_bytes", "compressed_bytes",
           "compression_ratio", "exact_reconstruction", "compression_time_seconds",
@@ -26,7 +26,7 @@ TOOLS = ["lc", "sz3", "zfp", "pfpl", "bzip2", "zstandard", "sleek", "spspeed", "
 def build_parser():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("input", help="Substring of an SDR dataset path (.f32 or .f32.dat)")
-    p.add_argument("--csv", default=str(Path(__file__).resolve().parent / "testrpts/lossless_results.csv"),
+    p.add_argument("--csv", default=str(REPORT_ROOT / "lossless_results.csv"),
                    help="Common CSV; append one row per codec/settings combination")
     p.add_argument("--tools", nargs="+", choices=TOOLS, default=TOOLS)
     p.add_argument("--input-root", default=INPUT_ROOT)
